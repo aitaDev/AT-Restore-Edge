@@ -7,7 +7,7 @@ AT-Restore protects one text field per page in Microsoft Edge. It remembers the 
 3. Type normally. The draft is saved locally once per second when it changes.
 4. After a crash or reload, right-click the empty protected field and choose **Recover**.
 
-The Recover command appears only for the selected field when it is empty and a saved draft exists.
+You can also right-click any editable field and choose **Protect this text box** instead of using the popup picker. **Recover** is always available on editable fields and restores content only when that field is protected, empty, and has a saved draft.
 
 To install locally, open `edge://extensions`, enable **Developer mode**, choose **Load unpacked**, and select this folder.
 

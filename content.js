@@ -132,16 +132,23 @@
     await chrome.storage.local.set({ [storageKey]: record });
   }
 
-  document.addEventListener("contextmenu", async (event) => {
+  document.addEventListener("contextmenu", (event) => {
     contextElement = isTextBox(event.target) ? event.target : null;
-    if (!record) await loadRecord();
-    const matches = Boolean(contextElement && record && selectorFor(contextElement) === record.selector);
-    const canRecover = matches && plainValue(contextElement).trim() === "" && Boolean(record.value);
-    chrome.runtime.sendMessage({ type: "AT_RESTORE_CONTEXT", canRecover }).catch(() => {});
   }, true);
+
+  function getContextElement() {
+    if (contextElement?.isConnected && isTextBox(contextElement)) return contextElement;
+    return isTextBox(document.activeElement) ? document.activeElement : null;
+  }
 
   chrome.runtime.onMessage.addListener((message, _sender, respond) => {
     if (message?.type === "AT_RESTORE_PICK") { startPicking(); respond({ ok: true }); return; }
+    if (message?.type === "AT_RESTORE_PROTECT_CONTEXT") {
+      const element = getContextElement();
+      if (element) selectField(element).then(() => respond({ ok: true }));
+      else respond({ ok: false });
+      return true;
+    }
     if (message?.type === "AT_RESTORE_STATUS") { loadRecord().then((saved) => respond({ pageKey, record: saved })); return true; }
     if (message?.type === "AT_RESTORE_CLEAR") {
       chrome.storage.local.remove(storageKey).then(() => {
@@ -150,12 +157,16 @@
       return true;
     }
     if (message?.type === "AT_RESTORE_RECOVER") {
-      if (contextElement && record && plainValue(contextElement).trim() === "" && record.value) {
-        writeValue(contextElement, record.value);
+      const element = getContextElement();
+      if (element && record && selectorFor(element) === record.selector && plainValue(element).trim() === "" && record.value) {
+        writeValue(element, record.value);
         lastSavedValue = record.value;
-        flash(contextElement, "Draft recovered");
+        flash(element, "Draft recovered");
         respond({ ok: true });
-      } else respond({ ok: false });
+      } else {
+        if (element) flash(element, "No saved draft for this field");
+        respond({ ok: false });
+      }
     }
   });
 
