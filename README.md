@@ -12,3 +12,5 @@ You can also right-click any editable field and choose **Protect this text box**
 To install locally, open `edge://extensions`, enable **Developer mode**, choose **Load unpacked**, and select this folder.
 
 This Manifest V3 build uses APIs supported by Chromium-based Microsoft Edge and does not send saved drafts anywhere.
+
+The picker supports fields inside same-origin and cross-origin frames and shows a visible instruction banner while active. Press **Esc** to cancel picking.

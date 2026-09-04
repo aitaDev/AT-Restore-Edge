@@ -45,7 +45,7 @@ async function init() {
 }
 
 $("pickField").addEventListener("click", async () => {
-  const result = await send({ type: "AT_RESTORE_PICK" });
+  const result = await chrome.runtime.sendMessage({ type: "AT_RESTORE_START_PICKER", tabId: activeTabId });
   if (result?.ok) window.close();
   else $("statusText").textContent = "This page does not allow extensions";
 });

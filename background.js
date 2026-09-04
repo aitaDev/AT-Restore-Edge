@@ -11,15 +11,25 @@ function createMenu() {
 chrome.runtime.onInstalled.addListener(createMenu);
 chrome.runtime.onStartup.addListener(createMenu);
 
-async function sendToPage(tabId, message) {
+async function sendToPage(tabId, message, frameId) {
+  const messageOptions = Number.isInteger(frameId) ? { frameId } : undefined;
+  const target = Number.isInteger(frameId) ? { tabId, frameIds: [frameId] } : { tabId, allFrames: true };
   try {
-    return await chrome.tabs.sendMessage(tabId, message);
+    return await chrome.tabs.sendMessage(tabId, message, messageOptions);
   } catch {
-    await chrome.scripting.insertCSS({ target: { tabId }, files: ["content.css"] }).catch(() => {});
-    await chrome.scripting.executeScript({ target: { tabId }, files: ["content.js"] });
-    return chrome.tabs.sendMessage(tabId, message);
+    await chrome.scripting.insertCSS({ target, files: ["content.css"] }).catch(() => {});
+    await chrome.scripting.executeScript({ target, files: ["content.js"] });
+    return chrome.tabs.sendMessage(tabId, message, messageOptions);
   }
 }
+
+chrome.runtime.onMessage.addListener((message, _sender, respond) => {
+  if (message?.type !== "AT_RESTORE_START_PICKER" || !message.tabId) return;
+  sendToPage(message.tabId, { type: "AT_RESTORE_PICK" })
+    .then(() => respond({ ok: true }))
+    .catch(() => respond({ ok: false }));
+  return true;
+});
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (!tab?.id) return;
@@ -28,5 +38,5 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     : info.menuItemId === RECOVER_MENU
       ? "AT_RESTORE_RECOVER"
       : null;
-  if (type) sendToPage(tab.id, { type }).catch(() => {});
+  if (type) sendToPage(tab.id, { type }, info.frameId).catch(() => {});
 });

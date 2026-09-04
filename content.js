@@ -8,6 +8,7 @@
   let selectedElement = null;
   let contextElement = null;
   let hovered = null;
+  let pickerBanner = null;
   let lastSavedValue = null;
 
   const isTextBox = (element) => {
@@ -89,24 +90,27 @@
   function stopPicking() {
     document.documentElement.classList.remove("at-restore-picking");
     hovered?.classList.remove("at-restore-hover");
+    pickerBanner?.remove();
+    pickerBanner = null;
     hovered = null;
-    document.removeEventListener("mouseover", onHover, true);
-    document.removeEventListener("click", onPick, true);
+    window.removeEventListener("pointerover", onHover, true);
+    window.removeEventListener("pointerdown", onPick, true);
     document.removeEventListener("keydown", onPickerKey, true);
   }
 
   function onHover(event) {
-    if (!isTextBox(event.target)) return;
+    const element = event.composedPath().find(isTextBox);
+    if (!element) return;
     hovered?.classList.remove("at-restore-hover");
-    hovered = event.target;
+    hovered = element;
     hovered.classList.add("at-restore-hover");
   }
 
   function onPick(event) {
-    if (!isTextBox(event.target)) return;
+    const element = event.composedPath().find(isTextBox);
+    if (!element) return;
     event.preventDefault();
     event.stopImmediatePropagation();
-    const element = event.target;
     stopPicking();
     selectField(element);
   }
@@ -116,8 +120,12 @@
   function startPicking() {
     stopPicking();
     document.documentElement.classList.add("at-restore-picking");
-    document.addEventListener("mouseover", onHover, true);
-    document.addEventListener("click", onPick, true);
+    pickerBanner = document.createElement("div");
+    pickerBanner.className = "at-restore-picker-banner";
+    pickerBanner.textContent = "AT-Restore: click a text box to protect it · Esc to cancel";
+    document.documentElement.appendChild(pickerBanner);
+    window.addEventListener("pointerover", onHover, true);
+    window.addEventListener("pointerdown", onPick, true);
     document.addEventListener("keydown", onPickerKey, true);
   }
 
@@ -133,7 +141,7 @@
   }
 
   document.addEventListener("contextmenu", (event) => {
-    contextElement = isTextBox(event.target) ? event.target : null;
+    contextElement = event.composedPath().find(isTextBox) || null;
   }, true);
 
   function getContextElement() {
