@@ -51,6 +51,13 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
       .catch(() => respond({ ok: false }));
     return true;
   }
+  if (message?.type === "AT_RESTORE_OPEN_PICKER_WINDOW" && message.tabId) {
+    const url = chrome.runtime.getURL(`popup.html?detached=1&select=1&tabId=${message.tabId}`);
+    chrome.windows.create({ url, type: "popup", width: 410, height: 610 })
+      .then((created) => respond({ ok: true, windowId: created.id }))
+      .catch(() => respond({ ok: false }));
+    return true;
+  }
   if (message?.type === "AT_RESTORE_GET_SELECTION" && message.tabId) {
     chrome.tabs.get(message.tabId).then(async (tab) => {
       const key = selectionKey(tab.url);

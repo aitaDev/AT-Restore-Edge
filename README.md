@@ -18,3 +18,5 @@ The picker supports fields inside same-origin and cross-origin frames. It shows 
 Selection status is tracked against the top-level page, so fields chosen inside embedded editors and iframes still appear correctly in the popup.
 
 Picker eligibility follows the page cursor: when an element displays the browser's text cursor, AT-Restore allows it to be selected. Standard form fields remain eligible even when a site overrides their cursor style.
+
+Starting the picker opens a detached AT-Restore control window. Unlike a browser toolbar popup, this window remains open while you interact with the page and updates when a field is selected.
