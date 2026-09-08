@@ -9,6 +9,7 @@
   let contextElement = null;
   let hovered = null;
   let pickerBanner = null;
+  let pickerBox = null;
   let lastSavedValue = null;
 
   const isTextBox = (element) => {
@@ -91,23 +92,37 @@
     document.documentElement.classList.remove("at-restore-picking");
     hovered?.classList.remove("at-restore-hover");
     pickerBanner?.remove();
+    pickerBox?.remove();
     pickerBanner = null;
+    pickerBox = null;
     hovered = null;
-    window.removeEventListener("pointerover", onHover, true);
-    window.removeEventListener("pointerdown", onPick, true);
+    window.removeEventListener("mousemove", onHover, true);
+    window.removeEventListener("click", onPick, true);
     document.removeEventListener("keydown", onPickerKey, true);
   }
 
   function onHover(event) {
     const element = event.composedPath().find(isTextBox);
-    if (!element) return;
+    if (!element) {
+      hovered = null;
+      if (pickerBox) pickerBox.style.display = "none";
+      return;
+    }
     hovered?.classList.remove("at-restore-hover");
     hovered = element;
-    hovered.classList.add("at-restore-hover");
+    const rect = element.getBoundingClientRect();
+    Object.assign(pickerBox.style, {
+      display: "block",
+      left: `${rect.left}px`,
+      top: `${rect.top}px`,
+      width: `${rect.width}px`,
+      height: `${rect.height}px`
+    });
+    if (pickerBanner) pickerBanner.textContent = `AT-Restore: click to protect “${describe(element)}” · Esc to cancel`;
   }
 
   function onPick(event) {
-    const element = event.composedPath().find(isTextBox);
+    const element = hovered || event.composedPath().find(isTextBox);
     if (!element) return;
     event.preventDefault();
     event.stopImmediatePropagation();
@@ -120,12 +135,15 @@
   function startPicking() {
     stopPicking();
     document.documentElement.classList.add("at-restore-picking");
+    pickerBox = document.createElement("div");
+    pickerBox.className = "at-restore-picker-box";
     pickerBanner = document.createElement("div");
     pickerBanner.className = "at-restore-picker-banner";
-    pickerBanner.textContent = "AT-Restore: click a text box to protect it · Esc to cancel";
-    document.documentElement.appendChild(pickerBanner);
-    window.addEventListener("pointerover", onHover, true);
-    window.addEventListener("pointerdown", onPick, true);
+    pickerBanner.textContent = "AT-Restore: move over a text box, then click · Esc to cancel";
+    document.documentElement.append(pickerBox);
+    if (window === top) document.documentElement.append(pickerBanner);
+    window.addEventListener("mousemove", onHover, true);
+    window.addEventListener("click", onPick, true);
     document.addEventListener("keydown", onPickerKey, true);
   }
 

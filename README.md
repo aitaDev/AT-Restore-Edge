@@ -13,4 +13,4 @@ To install locally, open `edge://extensions`, enable **Developer mode**, choose 
 
 This Manifest V3 build uses APIs supported by Chromium-based Microsoft Edge and does not send saved drafts anywhere.
 
-The picker supports fields inside same-origin and cross-origin frames and shows a visible instruction banner while active. Press **Esc** to cancel picking.
+The picker supports fields inside same-origin and cross-origin frames. It shows a visible instruction banner and a teal overlay box around the text field currently under the pointer. Press **Esc** to cancel picking.
