@@ -156,6 +156,7 @@
     record = { ...record, value, updatedAt: Date.now() };
     lastSavedValue = value;
     await chrome.storage.local.set({ [storageKey]: record });
+    chrome.runtime.sendMessage({ type: "AT_RESTORE_SAVED", record }).catch(() => {});
   }
 
   document.addEventListener("contextmenu", (event) => {
@@ -183,19 +184,26 @@
       return true;
     }
     if (message?.type === "AT_RESTORE_RECOVER") {
-      const element = getContextElement();
-      if (element && record && selectorFor(element) === record.selector && plainValue(element).trim() === "" && record.value) {
-        writeValue(element, record.value);
-        lastSavedValue = record.value;
-        flash(element, "Draft recovered");
-        respond({ ok: true });
-      } else {
-        if (element) flash(element, "No saved draft for this field");
-        respond({ ok: false });
-      }
+      (async () => {
+        if (!record) await loadRecord();
+        const element = getContextElement();
+        if (element && record && selectorFor(element) === record.selector && plainValue(element).trim() === "" && record.value) {
+          writeValue(element, record.value);
+          lastSavedValue = record.value;
+          flash(element, "Draft recovered");
+          respond({ ok: true });
+        } else {
+          if (element) flash(element, "No saved draft for this field");
+          respond({ ok: false });
+        }
+      })();
+      return true;
     }
   });
 
-  loadRecord().then(() => { lastSavedValue = record?.value ?? null; });
+  loadRecord().then(() => {
+    lastSavedValue = record?.value ?? null;
+    if (record) chrome.runtime.sendMessage({ type: "AT_RESTORE_SELECTED", record }).catch(() => {});
+  });
   setInterval(saveTick, 1000);
 })();

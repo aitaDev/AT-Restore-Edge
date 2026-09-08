@@ -11,6 +11,21 @@ function createMenu() {
 chrome.runtime.onInstalled.addListener(createMenu);
 chrome.runtime.onStartup.addListener(createMenu);
 
+function selectionKey(url) {
+  try {
+    const parsed = new URL(url);
+    return `selection:${parsed.origin}${parsed.pathname}`;
+  } catch {
+    return null;
+  }
+}
+
+async function saveSelection(tabUrl, record, frameId) {
+  const key = selectionKey(tabUrl);
+  if (!key || !record) return;
+  await chrome.storage.local.set({ [key]: { ...record, frameId, topPage: tabUrl } });
+}
+
 async function sendToPage(tabId, message, frameId) {
   const messageOptions = Number.isInteger(frameId) ? { frameId } : undefined;
   const target = Number.isInteger(frameId) ? { tabId, frameIds: [frameId] } : { tabId, allFrames: true };
@@ -23,12 +38,35 @@ async function sendToPage(tabId, message, frameId) {
   }
 }
 
-chrome.runtime.onMessage.addListener((message, _sender, respond) => {
-  if (message?.type !== "AT_RESTORE_START_PICKER" || !message.tabId) return;
-  sendToPage(message.tabId, { type: "AT_RESTORE_PICK" })
-    .then(() => respond({ ok: true }))
-    .catch(() => respond({ ok: false }));
-  return true;
+chrome.runtime.onMessage.addListener((message, sender, respond) => {
+  if (message?.type === "AT_RESTORE_SELECTED" || message?.type === "AT_RESTORE_SAVED") {
+    saveSelection(sender.tab?.url, message.record, sender.frameId)
+      .then(() => respond({ ok: true }))
+      .catch(() => respond({ ok: false }));
+    return true;
+  }
+  if (message?.type === "AT_RESTORE_START_PICKER" && message.tabId) {
+    sendToPage(message.tabId, { type: "AT_RESTORE_PICK" })
+      .then(() => respond({ ok: true }))
+      .catch(() => respond({ ok: false }));
+    return true;
+  }
+  if (message?.type === "AT_RESTORE_GET_SELECTION" && message.tabId) {
+    chrome.tabs.get(message.tabId).then(async (tab) => {
+      const key = selectionKey(tab.url);
+      const stored = key ? await chrome.storage.local.get(key) : {};
+      respond({ record: key ? stored[key] || null : null });
+    }).catch(() => respond({ record: null }));
+    return true;
+  }
+  if (message?.type === "AT_RESTORE_CLEAR_SELECTION" && message.tabId) {
+    chrome.tabs.get(message.tabId).then(async (tab) => {
+      const key = selectionKey(tab.url);
+      if (key) await chrome.storage.local.remove(key);
+      respond({ ok: true });
+    }).catch(() => respond({ ok: false }));
+    return true;
+  }
 });
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {

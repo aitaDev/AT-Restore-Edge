@@ -40,7 +40,7 @@ async function init() {
     $("pickField").disabled = true;
     return;
   }
-  const status = await send({ type: "AT_RESTORE_STATUS" });
+  const status = await chrome.runtime.sendMessage({ type: "AT_RESTORE_GET_SELECTION", tabId: activeTabId });
   setRecord(status?.record || null);
 }
 
@@ -49,6 +49,10 @@ $("pickField").addEventListener("click", async () => {
   if (result?.ok) window.close();
   else $("statusText").textContent = "This page does not allow extensions";
 });
-$("clearField").addEventListener("click", async () => { await send({ type: "AT_RESTORE_CLEAR" }); setRecord(null); });
+$("clearField").addEventListener("click", async () => {
+  await chrome.runtime.sendMessage({ type: "AT_RESTORE_CLEAR_SELECTION", tabId: activeTabId });
+  await send({ type: "AT_RESTORE_CLEAR" });
+  setRecord(null);
+});
 chrome.runtime.onMessage.addListener((message) => { if (message?.type === "AT_RESTORE_SELECTED") setRecord(message.record); });
 init();
