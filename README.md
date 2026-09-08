@@ -16,3 +16,5 @@ This Manifest V3 build uses APIs supported by Chromium-based Microsoft Edge and 
 The picker supports fields inside same-origin and cross-origin frames. It shows a visible instruction banner and a teal overlay box around the text field currently under the pointer. Press **Esc** to cancel picking.
 
 Selection status is tracked against the top-level page, so fields chosen inside embedded editors and iframes still appear correctly in the popup.
+
+Picker eligibility follows the page cursor: when an element displays the browser's text cursor, AT-Restore allows it to be selected. Standard form fields remain eligible even when a site overrides their cursor style.

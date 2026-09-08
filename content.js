@@ -19,12 +19,24 @@
     return element.isContentEditable;
   };
 
-  const readValue = (element) => element.isContentEditable ? element.innerHTML : element.value;
-  const plainValue = (element) => element.isContentEditable ? (element.textContent || "") : element.value;
+  const hasTextCursor = (element) => {
+    if (!(element instanceof HTMLElement)) return false;
+    return getComputedStyle(element).cursor === "text";
+  };
+
+  const isPickable = (element) => isTextBox(element) || hasTextCursor(element);
+
+  function pickableFromEvent(event) {
+    const path = event.composedPath();
+    return path.find(isTextBox) || path.find(hasTextCursor) || null;
+  }
+
+  const readValue = (element) => element.isContentEditable || !("value" in element) ? element.innerHTML : element.value;
+  const plainValue = (element) => element.isContentEditable || !("value" in element) ? (element.textContent || "") : element.value;
 
   function writeValue(element, value) {
     element.focus();
-    if (element.isContentEditable) {
+    if (element.isContentEditable || !("value" in element)) {
       element.innerHTML = value;
       element.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText", data: null }));
     } else {
@@ -102,7 +114,7 @@
   }
 
   function onHover(event) {
-    const element = event.composedPath().find(isTextBox);
+    const element = pickableFromEvent(event);
     if (!element) {
       hovered = null;
       if (pickerBox) pickerBox.style.display = "none";
@@ -122,7 +134,7 @@
   }
 
   function onPick(event) {
-    const element = hovered || event.composedPath().find(isTextBox);
+    const element = hovered || pickableFromEvent(event);
     if (!element) return;
     event.preventDefault();
     event.stopImmediatePropagation();
@@ -150,7 +162,7 @@
   async function saveTick() {
     if (!record) return;
     if (!selectedElement?.isConnected) selectedElement = document.querySelector(record.selector);
-    if (!selectedElement || !isTextBox(selectedElement)) return;
+    if (!selectedElement || !isPickable(selectedElement)) return;
     const value = readValue(selectedElement);
     if (value === lastSavedValue) return;
     record = { ...record, value, updatedAt: Date.now() };
