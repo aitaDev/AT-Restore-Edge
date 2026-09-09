@@ -7,9 +7,6 @@
   let record = null;
   let selectedElement = null;
   let contextElement = null;
-  let hovered = null;
-  let pickerBanner = null;
-  let pickerBox = null;
   let lastSavedValue = null;
 
   const isTextBox = (element) => {
@@ -18,18 +15,6 @@
     if (element instanceof HTMLInputElement) return ["text", "search", "email", "url", "tel", "number", ""].includes(element.type) && !element.disabled && !element.readOnly;
     return element.isContentEditable;
   };
-
-  const hasTextCursor = (element) => {
-    if (!(element instanceof HTMLElement)) return false;
-    return getComputedStyle(element).cursor === "text";
-  };
-
-  const isPickable = (element) => isTextBox(element) || hasTextCursor(element);
-
-  function pickableFromEvent(event) {
-    const path = event.composedPath();
-    return path.find(isTextBox) || path.find(hasTextCursor) || null;
-  }
 
   const readValue = (element) => element.isContentEditable || !("value" in element) ? element.innerHTML : element.value;
   const plainValue = (element) => element.isContentEditable || !("value" in element) ? (element.textContent || "") : element.value;
@@ -100,69 +85,10 @@
     setTimeout(() => { badge.remove(); element.classList.remove("at-restore-selected"); }, 2200);
   }
 
-  function stopPicking() {
-    document.documentElement.classList.remove("at-restore-picking");
-    hovered?.classList.remove("at-restore-hover");
-    pickerBanner?.remove();
-    pickerBox?.remove();
-    pickerBanner = null;
-    pickerBox = null;
-    hovered = null;
-    window.removeEventListener("mousemove", onHover, true);
-    window.removeEventListener("click", onPick, true);
-    document.removeEventListener("keydown", onPickerKey, true);
-  }
-
-  function onHover(event) {
-    const element = pickableFromEvent(event);
-    if (!element) {
-      hovered = null;
-      if (pickerBox) pickerBox.style.display = "none";
-      return;
-    }
-    hovered?.classList.remove("at-restore-hover");
-    hovered = element;
-    const rect = element.getBoundingClientRect();
-    Object.assign(pickerBox.style, {
-      display: "block",
-      left: `${rect.left}px`,
-      top: `${rect.top}px`,
-      width: `${rect.width}px`,
-      height: `${rect.height}px`
-    });
-    if (pickerBanner) pickerBanner.textContent = `AT-Restore: click to protect “${describe(element)}” · Esc to cancel`;
-  }
-
-  function onPick(event) {
-    const element = hovered || pickableFromEvent(event);
-    if (!element) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    stopPicking();
-    selectField(element);
-  }
-
-  function onPickerKey(event) { if (event.key === "Escape") stopPicking(); }
-
-  function startPicking() {
-    stopPicking();
-    document.documentElement.classList.add("at-restore-picking");
-    pickerBox = document.createElement("div");
-    pickerBox.className = "at-restore-picker-box";
-    pickerBanner = document.createElement("div");
-    pickerBanner.className = "at-restore-picker-banner";
-    pickerBanner.textContent = "AT-Restore: move over a text box, then click · Esc to cancel";
-    document.documentElement.append(pickerBox);
-    if (window === top) document.documentElement.append(pickerBanner);
-    window.addEventListener("mousemove", onHover, true);
-    window.addEventListener("click", onPick, true);
-    document.addEventListener("keydown", onPickerKey, true);
-  }
-
   async function saveTick() {
     if (!record) return;
     if (!selectedElement?.isConnected) selectedElement = document.querySelector(record.selector);
-    if (!selectedElement || !isPickable(selectedElement)) return;
+    if (!selectedElement || !isTextBox(selectedElement)) return;
     const value = readValue(selectedElement);
     if (value === lastSavedValue) return;
     record = { ...record, value, updatedAt: Date.now() };
@@ -181,7 +107,6 @@
   }
 
   chrome.runtime.onMessage.addListener((message, _sender, respond) => {
-    if (message?.type === "AT_RESTORE_PICK") { startPicking(); respond({ ok: true }); return; }
     if (message?.type === "AT_RESTORE_PROTECT_CONTEXT") {
       const element = getContextElement();
       if (element) selectField(element).then(() => respond({ ok: true }));
