@@ -1,12 +1,27 @@
 {
   "manifest_version": 3,
   "name": "AT-Restore for Edge",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Crash-safe text field autosave and recovery for Microsoft Edge.",
   "permissions": ["storage", "tabs", "scripting", "contextMenus"],
   "host_permissions": ["<all_urls>"],
   "background": { "service_worker": "background.js" },
-  "action": { "default_title": "AT-Restore for Edge", "default_popup": "popup.html" },
+  "action": {
+    "default_title": "AT-Restore for Edge",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/at-restore-16.png",
+      "32": "icons/at-restore-32.png",
+      "48": "icons/at-restore-48.png",
+      "128": "icons/at-restore-128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/at-restore-16.png",
+    "32": "icons/at-restore-32.png",
+    "48": "icons/at-restore-48.png",
+    "128": "icons/at-restore-128.png"
+  },
   "content_scripts": [{
     "matches": ["<all_urls>"],
     "js": ["content.js"],
